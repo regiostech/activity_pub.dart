@@ -2,12 +2,12 @@ import 'package:angel_serialize/angel_serialize.dart';
 import 'package:http_parser/http_parser.dart';
 part 'models.g.dart';
 
-final Uri w3ActivityStreamsContext =
-    Uri.parse('https://www.w3.org/ns/activitystreams');
+const String w3ActivityStreamsContext = 'https://www.w3.org/ns/activitystreams';
+final Uri w3ActivityStreamsContextUri = Uri.parse(w3ActivityStreamsContext);
 
 APActor _apActorFrom(v) => APActor.fromJson(v);
 Uri _contextFromString(v) =>
-    v is String ? Uri.parse(v) : w3ActivityStreamsContext;
+    v is String ? Uri.parse(v) : w3ActivityStreamsContextUri;
 MediaType _mediaTypeFromString(v) => MediaType.parse(v as String);
 Object _apActorTo(APActor a) => a.toJson();
 String _mediaTypeToString(MediaType m) => m.toString();
@@ -20,6 +20,7 @@ const SerializableField _uriField = SerializableField(
     serializer: #_uriToString,
     deserializer: #_uriFromString,
     serializesTo: String);
+// TODO: Find a way to default to w3 context.
 const SerializableField _contextField = SerializableField(
     alias: '@context',
     serializer: #_uriToString,
