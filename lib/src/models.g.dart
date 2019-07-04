@@ -7,6 +7,128 @@ part of 'models.dart';
 // **************************************************************************
 
 @generatedSerializable
+class APObject implements _APObject {
+  const APObject({this.context, this.id, this.source, this.summary, this.type});
+
+  @override
+  final Uri context;
+
+  @override
+  final Uri id;
+
+  @override
+  final _Source source;
+
+  @override
+  final String summary;
+
+  @override
+  final String type;
+
+  APObject copyWith(
+      {Uri context, Uri id, _Source source, String summary, String type}) {
+    return APObject(
+        context: context ?? this.context,
+        id: id ?? this.id,
+        source: source ?? this.source,
+        summary: summary ?? this.summary,
+        type: type ?? this.type);
+  }
+
+  bool operator ==(other) {
+    return other is _APObject &&
+        other.context == context &&
+        other.id == id &&
+        other.source == source &&
+        other.summary == summary &&
+        other.type == type;
+  }
+
+  @override
+  int get hashCode {
+    return hashObjects([context, id, source, summary, type]);
+  }
+
+  @override
+  String toString() {
+    return "APObject(context=$context, id=$id, source=$source, summary=$summary, type=$type)";
+  }
+
+  Map<String, dynamic> toJson() {
+    return APObjectSerializer.toMap(this);
+  }
+}
+
+@generatedSerializable
+class Activity implements _Activity {
+  const Activity(
+      {this.context,
+      this.id,
+      this.source,
+      this.summary,
+      this.type,
+      this.actor});
+
+  @override
+  final Uri context;
+
+  @override
+  final Uri id;
+
+  @override
+  final _Source source;
+
+  @override
+  final String summary;
+
+  @override
+  final String type;
+
+  @override
+  final APActor actor;
+
+  Activity copyWith(
+      {Uri context,
+      Uri id,
+      _Source source,
+      String summary,
+      String type,
+      APActor actor}) {
+    return Activity(
+        context: context ?? this.context,
+        id: id ?? this.id,
+        source: source ?? this.source,
+        summary: summary ?? this.summary,
+        type: type ?? this.type,
+        actor: actor ?? this.actor);
+  }
+
+  bool operator ==(other) {
+    return other is _Activity &&
+        other.context == context &&
+        other.id == id &&
+        other.source == source &&
+        other.summary == summary &&
+        other.type == type &&
+        other.actor == actor;
+  }
+
+  @override
+  int get hashCode {
+    return hashObjects([context, id, source, summary, type, actor]);
+  }
+
+  @override
+  String toString() {
+    return "Activity(context=$context, id=$id, source=$source, summary=$summary, type=$type, actor=$actor)";
+  }
+
+  Map<String, dynamic> toJson() {
+    return ActivitySerializer.toMap(this);
+  }
+}
+
+@generatedSerializable
 class Actor implements _Actor {
   const Actor(
       {this.context,
@@ -170,6 +292,147 @@ class Source implements _Source {
 // **************************************************************************
 // SerializerGenerator
 // **************************************************************************
+
+const APObjectSerializer aPObjectSerializer = APObjectSerializer();
+
+class APObjectEncoder extends Converter<APObject, Map> {
+  const APObjectEncoder();
+
+  @override
+  Map convert(APObject model) => APObjectSerializer.toMap(model);
+}
+
+class APObjectDecoder extends Converter<Map, APObject> {
+  const APObjectDecoder();
+
+  @override
+  APObject convert(Map map) => APObjectSerializer.fromMap(map);
+}
+
+class APObjectSerializer extends Codec<APObject, Map> {
+  const APObjectSerializer();
+
+  @override
+  get encoder => const APObjectEncoder();
+  @override
+  get decoder => const APObjectDecoder();
+  static APObject fromMap(Map map) {
+    return APObject(
+        context: _contextFromString(map['@context']),
+        id: _uriFromString(map['id']),
+        source: map['source'] != null
+            ? SourceSerializer.fromMap(map['source'] as Map)
+            : null,
+        summary: map['summary'] as String,
+        type: map['type'] as String);
+  }
+
+  static Map<String, dynamic> toMap(_APObject model) {
+    if (model == null) {
+      return null;
+    }
+    return {
+      '@context': _uriToString(model.context),
+      'id': _uriToString(model.id),
+      'source': SourceSerializer.toMap(model.source),
+      'summary': model.summary,
+      'type': model.type
+    };
+  }
+}
+
+abstract class APObjectFields {
+  static const List<String> allFields = <String>[
+    context,
+    id,
+    source,
+    summary,
+    type
+  ];
+
+  static const String context = '@context';
+
+  static const String id = 'id';
+
+  static const String source = 'source';
+
+  static const String summary = 'summary';
+
+  static const String type = 'type';
+}
+
+const ActivitySerializer activitySerializer = ActivitySerializer();
+
+class ActivityEncoder extends Converter<Activity, Map> {
+  const ActivityEncoder();
+
+  @override
+  Map convert(Activity model) => ActivitySerializer.toMap(model);
+}
+
+class ActivityDecoder extends Converter<Map, Activity> {
+  const ActivityDecoder();
+
+  @override
+  Activity convert(Map map) => ActivitySerializer.fromMap(map);
+}
+
+class ActivitySerializer extends Codec<Activity, Map> {
+  const ActivitySerializer();
+
+  @override
+  get encoder => const ActivityEncoder();
+  @override
+  get decoder => const ActivityDecoder();
+  static Activity fromMap(Map map) {
+    return Activity(
+        context: _contextFromString(map['@context']),
+        id: _uriFromString(map['id']),
+        source: map['source'] != null
+            ? SourceSerializer.fromMap(map['source'] as Map)
+            : null,
+        summary: map['summary'] as String,
+        type: map['type'] as String,
+        actor: _apActorFrom(map['actor']));
+  }
+
+  static Map<String, dynamic> toMap(_Activity model) {
+    if (model == null) {
+      return null;
+    }
+    return {
+      '@context': _uriToString(model.context),
+      'id': _uriToString(model.id),
+      'source': SourceSerializer.toMap(model.source),
+      'summary': model.summary,
+      'type': model.type,
+      'actor': _apActorTo(model.actor)
+    };
+  }
+}
+
+abstract class ActivityFields {
+  static const List<String> allFields = <String>[
+    context,
+    id,
+    source,
+    summary,
+    type,
+    actor
+  ];
+
+  static const String context = '@context';
+
+  static const String id = 'id';
+
+  static const String source = 'source';
+
+  static const String summary = 'summary';
+
+  static const String type = 'type';
+
+  static const String actor = 'actor';
+}
 
 const ActorSerializer actorSerializer = ActorSerializer();
 
