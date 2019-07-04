@@ -7,29 +7,80 @@ part of 'models.dart';
 // **************************************************************************
 
 @generatedSerializable
-class APObject implements _APObject {
-  const APObject({this.context, this.id, this.source, this.summary, this.type});
+class APObject extends _APObject {
+  APObject(
+      {this.specContext,
+      this.id,
+      this.attachment,
+      this.attributedTo,
+      this.audience,
+      this.bcc,
+      this.bto,
+      this.cc,
+      this.context,
+      this.source,
+      this.summary,
+      this.type});
 
   @override
-  final Uri context;
+  Uri specContext;
 
   @override
-  final Uri id;
+  Uri id;
 
   @override
-  final _Source source;
+  APObjectOrLink attachment;
 
   @override
-  final String summary;
+  APObjectOrLink attributedTo;
 
   @override
-  final String type;
+  APObjectOrLink audience;
+
+  @override
+  APObjectOrLink bcc;
+
+  @override
+  APObjectOrLink bto;
+
+  @override
+  APObjectOrLink cc;
+
+  @override
+  APObjectOrLink context;
+
+  @override
+  _Source source;
+
+  @override
+  String summary;
+
+  @override
+  String type;
 
   APObject copyWith(
-      {Uri context, Uri id, _Source source, String summary, String type}) {
+      {Uri specContext,
+      Uri id,
+      APObjectOrLink attachment,
+      APObjectOrLink attributedTo,
+      APObjectOrLink audience,
+      APObjectOrLink bcc,
+      APObjectOrLink bto,
+      APObjectOrLink cc,
+      APObjectOrLink context,
+      _Source source,
+      String summary,
+      String type}) {
     return APObject(
-        context: context ?? this.context,
+        specContext: specContext ?? this.specContext,
         id: id ?? this.id,
+        attachment: attachment ?? this.attachment,
+        attributedTo: attributedTo ?? this.attributedTo,
+        audience: audience ?? this.audience,
+        bcc: bcc ?? this.bcc,
+        bto: bto ?? this.bto,
+        cc: cc ?? this.cc,
+        context: context ?? this.context,
         source: source ?? this.source,
         summary: summary ?? this.summary,
         type: type ?? this.type);
@@ -37,8 +88,15 @@ class APObject implements _APObject {
 
   bool operator ==(other) {
     return other is _APObject &&
-        other.context == context &&
+        other.specContext == specContext &&
         other.id == id &&
+        other.attachment == attachment &&
+        other.attributedTo == attributedTo &&
+        other.audience == audience &&
+        other.bcc == bcc &&
+        other.bto == bto &&
+        other.cc == cc &&
+        other.context == context &&
         other.source == source &&
         other.summary == summary &&
         other.type == type;
@@ -46,12 +104,25 @@ class APObject implements _APObject {
 
   @override
   int get hashCode {
-    return hashObjects([context, id, source, summary, type]);
+    return hashObjects([
+      specContext,
+      id,
+      attachment,
+      attributedTo,
+      audience,
+      bcc,
+      bto,
+      cc,
+      context,
+      source,
+      summary,
+      type
+    ]);
   }
 
   @override
   String toString() {
-    return "APObject(context=$context, id=$id, source=$source, summary=$summary, type=$type)";
+    return "APObject(specContext=$specContext, id=$id, attachment=$attachment, attributedTo=$attributedTo, audience=$audience, bcc=$bcc, bto=$bto, cc=$cc, context=$context, source=$source, summary=$summary, type=$type)";
   }
 
   Map<String, dynamic> toJson() {
@@ -60,43 +131,85 @@ class APObject implements _APObject {
 }
 
 @generatedSerializable
-class Activity implements _Activity {
-  const Activity(
-      {this.context,
+class Activity extends _Activity {
+  Activity(
+      {this.specContext,
       this.id,
+      this.attachment,
+      this.attributedTo,
+      this.audience,
+      this.bcc,
+      this.bto,
+      this.cc,
+      this.context,
       this.source,
       this.summary,
       this.type,
       this.actor});
 
   @override
-  final Uri context;
+  Uri specContext;
 
   @override
-  final Uri id;
+  Uri id;
 
   @override
-  final _Source source;
+  APObjectOrLink attachment;
 
   @override
-  final String summary;
+  APObjectOrLink attributedTo;
 
   @override
-  final String type;
+  APObjectOrLink audience;
 
   @override
-  final APActor actor;
+  APObjectOrLink bcc;
+
+  @override
+  APObjectOrLink bto;
+
+  @override
+  APObjectOrLink cc;
+
+  @override
+  APObjectOrLink context;
+
+  @override
+  _Source source;
+
+  @override
+  String summary;
+
+  @override
+  String type;
+
+  @override
+  APActor actor;
 
   Activity copyWith(
-      {Uri context,
+      {Uri specContext,
       Uri id,
+      APObjectOrLink attachment,
+      APObjectOrLink attributedTo,
+      APObjectOrLink audience,
+      APObjectOrLink bcc,
+      APObjectOrLink bto,
+      APObjectOrLink cc,
+      APObjectOrLink context,
       _Source source,
       String summary,
       String type,
       APActor actor}) {
     return Activity(
-        context: context ?? this.context,
+        specContext: specContext ?? this.specContext,
         id: id ?? this.id,
+        attachment: attachment ?? this.attachment,
+        attributedTo: attributedTo ?? this.attributedTo,
+        audience: audience ?? this.audience,
+        bcc: bcc ?? this.bcc,
+        bto: bto ?? this.bto,
+        cc: cc ?? this.cc,
+        context: context ?? this.context,
         source: source ?? this.source,
         summary: summary ?? this.summary,
         type: type ?? this.type,
@@ -105,8 +218,15 @@ class Activity implements _Activity {
 
   bool operator ==(other) {
     return other is _Activity &&
-        other.context == context &&
+        other.specContext == specContext &&
         other.id == id &&
+        other.attachment == attachment &&
+        other.attributedTo == attributedTo &&
+        other.audience == audience &&
+        other.bcc == bcc &&
+        other.bto == bto &&
+        other.cc == cc &&
+        other.context == context &&
         other.source == source &&
         other.summary == summary &&
         other.type == type &&
@@ -115,12 +235,26 @@ class Activity implements _Activity {
 
   @override
   int get hashCode {
-    return hashObjects([context, id, source, summary, type, actor]);
+    return hashObjects([
+      specContext,
+      id,
+      attachment,
+      attributedTo,
+      audience,
+      bcc,
+      bto,
+      cc,
+      context,
+      source,
+      summary,
+      type,
+      actor
+    ]);
   }
 
   @override
   String toString() {
-    return "Activity(context=$context, id=$id, source=$source, summary=$summary, type=$type, actor=$actor)";
+    return "Activity(specContext=$specContext, id=$id, attachment=$attachment, attributedTo=$attributedTo, audience=$audience, bcc=$bcc, bto=$bto, cc=$cc, context=$context, source=$source, summary=$summary, type=$type, actor=$actor)";
   }
 
   Map<String, dynamic> toJson() {
@@ -129,14 +263,21 @@ class Activity implements _Activity {
 }
 
 @generatedSerializable
-class Actor implements _Actor {
-  const Actor(
-      {this.context,
+class Actor extends _Actor {
+  Actor(
+      {this.specContext,
       this.id,
-      this.type,
+      this.attachment,
+      this.attributedTo,
+      this.audience,
+      this.bcc,
+      this.bto,
+      this.cc,
+      this.context,
       this.source,
-      this.name,
       this.summary,
+      this.type,
+      this.name,
       this.inbox,
       this.outbox,
       this.following,
@@ -145,48 +286,76 @@ class Actor implements _Actor {
       this.preferredUsername});
 
   @override
-  final Uri context;
+  Uri specContext;
 
   @override
-  final Uri id;
+  Uri id;
 
   @override
-  final String type;
+  APObjectOrLink attachment;
 
   @override
-  final _Source source;
+  APObjectOrLink attributedTo;
 
   @override
-  final String name;
+  APObjectOrLink audience;
 
   @override
-  final String summary;
+  APObjectOrLink bcc;
 
   @override
-  final Uri inbox;
+  APObjectOrLink bto;
 
   @override
-  final Uri outbox;
+  APObjectOrLink cc;
 
   @override
-  final Uri following;
+  APObjectOrLink context;
 
   @override
-  final Uri followers;
+  _Source source;
 
   @override
-  final Uri liked;
+  String summary;
 
   @override
-  final String preferredUsername;
+  String type;
+
+  @override
+  String name;
+
+  @override
+  Uri inbox;
+
+  @override
+  Uri outbox;
+
+  @override
+  Uri following;
+
+  @override
+  Uri followers;
+
+  @override
+  Uri liked;
+
+  @override
+  String preferredUsername;
 
   Actor copyWith(
-      {Uri context,
+      {Uri specContext,
       Uri id,
-      String type,
+      APObjectOrLink attachment,
+      APObjectOrLink attributedTo,
+      APObjectOrLink audience,
+      APObjectOrLink bcc,
+      APObjectOrLink bto,
+      APObjectOrLink cc,
+      APObjectOrLink context,
       _Source source,
-      String name,
       String summary,
+      String type,
+      String name,
       Uri inbox,
       Uri outbox,
       Uri following,
@@ -194,12 +363,19 @@ class Actor implements _Actor {
       Uri liked,
       String preferredUsername}) {
     return Actor(
-        context: context ?? this.context,
+        specContext: specContext ?? this.specContext,
         id: id ?? this.id,
-        type: type ?? this.type,
+        attachment: attachment ?? this.attachment,
+        attributedTo: attributedTo ?? this.attributedTo,
+        audience: audience ?? this.audience,
+        bcc: bcc ?? this.bcc,
+        bto: bto ?? this.bto,
+        cc: cc ?? this.cc,
+        context: context ?? this.context,
         source: source ?? this.source,
-        name: name ?? this.name,
         summary: summary ?? this.summary,
+        type: type ?? this.type,
+        name: name ?? this.name,
         inbox: inbox ?? this.inbox,
         outbox: outbox ?? this.outbox,
         following: following ?? this.following,
@@ -210,12 +386,19 @@ class Actor implements _Actor {
 
   bool operator ==(other) {
     return other is _Actor &&
-        other.context == context &&
+        other.specContext == specContext &&
         other.id == id &&
-        other.type == type &&
+        other.attachment == attachment &&
+        other.attributedTo == attributedTo &&
+        other.audience == audience &&
+        other.bcc == bcc &&
+        other.bto == bto &&
+        other.cc == cc &&
+        other.context == context &&
         other.source == source &&
-        other.name == name &&
         other.summary == summary &&
+        other.type == type &&
+        other.name == name &&
         other.inbox == inbox &&
         other.outbox == outbox &&
         other.following == following &&
@@ -227,12 +410,19 @@ class Actor implements _Actor {
   @override
   int get hashCode {
     return hashObjects([
-      context,
+      specContext,
       id,
-      type,
+      attachment,
+      attributedTo,
+      audience,
+      bcc,
+      bto,
+      cc,
+      context,
       source,
-      name,
       summary,
+      type,
+      name,
       inbox,
       outbox,
       following,
@@ -244,7 +434,7 @@ class Actor implements _Actor {
 
   @override
   String toString() {
-    return "Actor(context=$context, id=$id, type=$type, source=$source, name=$name, summary=$summary, inbox=$inbox, outbox=$outbox, following=$following, followers=$followers, liked=$liked, preferredUsername=$preferredUsername)";
+    return "Actor(specContext=$specContext, id=$id, attachment=$attachment, attributedTo=$attributedTo, audience=$audience, bcc=$bcc, bto=$bto, cc=$cc, context=$context, source=$source, summary=$summary, type=$type, name=$name, inbox=$inbox, outbox=$outbox, following=$following, followers=$followers, liked=$liked, preferredUsername=$preferredUsername)";
   }
 
   Map<String, dynamic> toJson() {
@@ -253,14 +443,14 @@ class Actor implements _Actor {
 }
 
 @generatedSerializable
-class Source implements _Source {
-  const Source({this.content, this.mediaType});
+class Source extends _Source {
+  Source({this.content, this.mediaType});
 
   @override
-  final String content;
+  String content;
 
   @override
-  final MediaType mediaType;
+  MediaType mediaType;
 
   Source copyWith({String content, MediaType mediaType}) {
     return Source(
@@ -318,8 +508,15 @@ class APObjectSerializer extends Codec<APObject, Map> {
   get decoder => const APObjectDecoder();
   static APObject fromMap(Map map) {
     return APObject(
-        context: _contextFromString(map['@context']),
+        specContext: _contextFromString(map['@context']),
         id: _uriFromString(map['id']),
+        attachment: _apObjectFrom(map['attachment']),
+        attributedTo: _apObjectFrom(map['attributedTo']),
+        audience: _apObjectFrom(map['audience']),
+        bcc: _apObjectFrom(map['bcc']),
+        bto: _apObjectFrom(map['bto']),
+        cc: _apObjectFrom(map['cc']),
+        context: _apObjectFrom(map['context']),
         source: map['source'] != null
             ? SourceSerializer.fromMap(map['source'] as Map)
             : null,
@@ -332,8 +529,15 @@ class APObjectSerializer extends Codec<APObject, Map> {
       return null;
     }
     return {
-      '@context': _uriToString(model.context),
+      '@context': _uriToString(model.specContext),
       'id': _uriToString(model.id),
+      'attachment': _apObjectTo(model.attachment),
+      'attributedTo': _apObjectTo(model.attributedTo),
+      'audience': _apObjectTo(model.audience),
+      'bcc': _apObjectTo(model.bcc),
+      'bto': _apObjectTo(model.bto),
+      'cc': _apObjectTo(model.cc),
+      'context': _apObjectTo(model.context),
       'source': SourceSerializer.toMap(model.source),
       'summary': model.summary,
       'type': model.type
@@ -343,16 +547,37 @@ class APObjectSerializer extends Codec<APObject, Map> {
 
 abstract class APObjectFields {
   static const List<String> allFields = <String>[
-    context,
+    specContext,
     id,
+    attachment,
+    attributedTo,
+    audience,
+    bcc,
+    bto,
+    cc,
+    context,
     source,
     summary,
     type
   ];
 
-  static const String context = '@context';
+  static const String specContext = '@context';
 
   static const String id = 'id';
+
+  static const String attachment = 'attachment';
+
+  static const String attributedTo = 'attributedTo';
+
+  static const String audience = 'audience';
+
+  static const String bcc = 'bcc';
+
+  static const String bto = 'bto';
+
+  static const String cc = 'cc';
+
+  static const String context = 'context';
 
   static const String source = 'source';
 
@@ -386,8 +611,15 @@ class ActivitySerializer extends Codec<Activity, Map> {
   get decoder => const ActivityDecoder();
   static Activity fromMap(Map map) {
     return Activity(
-        context: _contextFromString(map['@context']),
+        specContext: _contextFromString(map['@context']),
         id: _uriFromString(map['id']),
+        attachment: _apObjectFrom(map['attachment']),
+        attributedTo: _apObjectFrom(map['attributedTo']),
+        audience: _apObjectFrom(map['audience']),
+        bcc: _apObjectFrom(map['bcc']),
+        bto: _apObjectFrom(map['bto']),
+        cc: _apObjectFrom(map['cc']),
+        context: _apObjectFrom(map['context']),
         source: map['source'] != null
             ? SourceSerializer.fromMap(map['source'] as Map)
             : null,
@@ -401,8 +633,15 @@ class ActivitySerializer extends Codec<Activity, Map> {
       return null;
     }
     return {
-      '@context': _uriToString(model.context),
+      '@context': _uriToString(model.specContext),
       'id': _uriToString(model.id),
+      'attachment': _apObjectTo(model.attachment),
+      'attributedTo': _apObjectTo(model.attributedTo),
+      'audience': _apObjectTo(model.audience),
+      'bcc': _apObjectTo(model.bcc),
+      'bto': _apObjectTo(model.bto),
+      'cc': _apObjectTo(model.cc),
+      'context': _apObjectTo(model.context),
       'source': SourceSerializer.toMap(model.source),
       'summary': model.summary,
       'type': model.type,
@@ -413,17 +652,38 @@ class ActivitySerializer extends Codec<Activity, Map> {
 
 abstract class ActivityFields {
   static const List<String> allFields = <String>[
-    context,
+    specContext,
     id,
+    attachment,
+    attributedTo,
+    audience,
+    bcc,
+    bto,
+    cc,
+    context,
     source,
     summary,
     type,
     actor
   ];
 
-  static const String context = '@context';
+  static const String specContext = '@context';
 
   static const String id = 'id';
+
+  static const String attachment = 'attachment';
+
+  static const String attributedTo = 'attributedTo';
+
+  static const String audience = 'audience';
+
+  static const String bcc = 'bcc';
+
+  static const String bto = 'bto';
+
+  static const String cc = 'cc';
+
+  static const String context = 'context';
 
   static const String source = 'source';
 
@@ -459,14 +719,21 @@ class ActorSerializer extends Codec<Actor, Map> {
   get decoder => const ActorDecoder();
   static Actor fromMap(Map map) {
     return Actor(
-        context: _contextFromString(map['@context']),
+        specContext: _contextFromString(map['@context']),
         id: _uriFromString(map['id']),
-        type: map['type'] as String,
+        attachment: _apObjectFrom(map['attachment']),
+        attributedTo: _apObjectFrom(map['attributedTo']),
+        audience: _apObjectFrom(map['audience']),
+        bcc: _apObjectFrom(map['bcc']),
+        bto: _apObjectFrom(map['bto']),
+        cc: _apObjectFrom(map['cc']),
+        context: _apObjectFrom(map['context']),
         source: map['source'] != null
             ? SourceSerializer.fromMap(map['source'] as Map)
             : null,
-        name: map['name'] as String,
         summary: map['summary'] as String,
+        type: map['type'] as String,
+        name: map['name'] as String,
         inbox: map['inbox'] as Uri,
         outbox: map['outbox'] as Uri,
         following: map['following'] as Uri,
@@ -480,12 +747,19 @@ class ActorSerializer extends Codec<Actor, Map> {
       return null;
     }
     return {
-      '@context': _uriToString(model.context),
+      '@context': _uriToString(model.specContext),
       'id': _uriToString(model.id),
-      'type': model.type,
+      'attachment': _apObjectTo(model.attachment),
+      'attributedTo': _apObjectTo(model.attributedTo),
+      'audience': _apObjectTo(model.audience),
+      'bcc': _apObjectTo(model.bcc),
+      'bto': _apObjectTo(model.bto),
+      'cc': _apObjectTo(model.cc),
+      'context': _apObjectTo(model.context),
       'source': SourceSerializer.toMap(model.source),
-      'name': model.name,
       'summary': model.summary,
+      'type': model.type,
+      'name': model.name,
       'inbox': model.inbox,
       'outbox': model.outbox,
       'following': model.following,
@@ -498,12 +772,19 @@ class ActorSerializer extends Codec<Actor, Map> {
 
 abstract class ActorFields {
   static const List<String> allFields = <String>[
-    context,
+    specContext,
     id,
-    type,
+    attachment,
+    attributedTo,
+    audience,
+    bcc,
+    bto,
+    cc,
+    context,
     source,
-    name,
     summary,
+    type,
+    name,
     inbox,
     outbox,
     following,
@@ -512,17 +793,31 @@ abstract class ActorFields {
     preferredUsername
   ];
 
-  static const String context = '@context';
+  static const String specContext = '@context';
 
   static const String id = 'id';
 
-  static const String type = 'type';
+  static const String attachment = 'attachment';
+
+  static const String attributedTo = 'attributedTo';
+
+  static const String audience = 'audience';
+
+  static const String bcc = 'bcc';
+
+  static const String bto = 'bto';
+
+  static const String cc = 'cc';
+
+  static const String context = 'context';
 
   static const String source = 'source';
 
-  static const String name = 'name';
-
   static const String summary = 'summary';
+
+  static const String type = 'type';
+
+  static const String name = 'name';
 
   static const String inbox = 'inbox';
 

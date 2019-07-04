@@ -6,16 +6,22 @@ const String w3ActivityStreamsContext = 'https://www.w3.org/ns/activitystreams';
 final Uri w3ActivityStreamsContextUri = Uri.parse(w3ActivityStreamsContext);
 
 APActor _apActorFrom(v) => APActor.fromJson(v);
+APObjectOrLink _apObjectFrom(v) => APObjectOrLink.fromJson(v as Map);
 Uri _contextFromString(v) =>
     v is String ? Uri.parse(v) : w3ActivityStreamsContextUri;
 MediaType _mediaTypeFromString(v) => MediaType.parse(v as String);
 Object _apActorTo(APActor a) => a.toJson();
+Object _apObjectTo(APObjectOrLink a) => a.toJson();
 String _mediaTypeToString(MediaType m) => m.toString();
 Uri _uriFromString(v) => Uri.parse(v as String);
 String _uriToString(Uri u) => u.toString();
 
 const SerializableField _actorField = SerializableField(
     serializer: #_apActorTo, deserializer: #_apActorFrom, serializesTo: Object);
+const SerializableField _objectField = SerializableField(
+    serializer: #_apObjectTo,
+    deserializer: #_apObjectFrom,
+    serializesTo: Object);
 const SerializableField _uriField = SerializableField(
     serializer: #_uriToString,
     deserializer: #_uriFromString,
@@ -28,7 +34,7 @@ const SerializableField _contextField = SerializableField(
     serializesTo: String);
 
 class ObjectOrLink<T extends _APObject> {
-  final Codec<T, Map> codec;
+  final T Function(Map) decode;
   T _object;
   Uri _link;
   List<ObjectOrLink<T>> _list;
@@ -39,7 +45,7 @@ class ObjectOrLink<T extends _APObject> {
 
   List<ObjectOrLink<T>> get list => _list;
 
-  ObjectOrLink(this.codec, {T object, link, Iterable<ObjectOrLink<T>> list}) {
+  ObjectOrLink(this.decode, {T object, link, Iterable<ObjectOrLink<T>> list}) {
     if (object != null && link != null) {
       throw FormatException(
           'An object, link, and/or list cannot be present together.');
@@ -59,18 +65,18 @@ class ObjectOrLink<T extends _APObject> {
     }
   }
 
-  ObjectOrLink.fromJson(this.codec, value, {bool allowList = true}) {
+  ObjectOrLink.fromJson(this.decode, value, {bool allowList = true}) {
     if (value is String) {
       _link = Uri.parse(value);
     } else if (value is Map) {
-      _object = codec.decode(value);
+      _object = decode(value);
     } else if (value is Iterable) {
       if (!allowList) {
         throw FormatException('A list is not allowed here.', value);
       }
 
       _list = value
-          .map((x) => ObjectOrLink.fromJson(codec, x, allowList: false))
+          .map((x) => ObjectOrLink.fromJson(decode, x, allowList: false))
           .toList();
     } else if (value != null) {
       throw FormatException(
@@ -83,7 +89,7 @@ class ObjectOrLink<T extends _APObject> {
     if (_link != null) {
       return _link.toString();
     } else if (_object != null) {
-      return codec.encode(_object);
+      return _object.toJson();
     } else if (_list != null) {
       return _list.map((i) => i.toJson()).toList();
     } else {
@@ -94,61 +100,70 @@ class ObjectOrLink<T extends _APObject> {
 
 class APActor extends ObjectOrLink<Actor> {
   APActor({Actor object, link, Iterable<ObjectOrLink<Actor>> list})
-      : super(actorSerializer, object: object, link: link, list: list);
+      : super(ActorSerializer.fromMap, object: object, link: link, list: list);
 
   APActor.fromJson(value, {bool allowList = true})
-      : super.fromJson(actorSerializer, value, allowList: allowList);
+      : super.fromJson(ActorSerializer.fromMap, value, allowList: allowList);
+}
+
+class APObjectOrLink extends ObjectOrLink<APObject> {
+  APObjectOrLink({APObject object, link, Iterable<ObjectOrLink<APObject>> list})
+      : super(APObjectSerializer.fromMap,
+            object: object, link: link, list: list);
+
+  APObjectOrLink.fromJson(value, {bool allowList = true})
+      : super.fromJson(APObjectSerializer.fromMap, value, allowList: allowList);
 }
 
 @Serializable(autoSnakeCaseNames: false)
 abstract class _APObject {
   @_contextField
-  Uri get context;
+  Uri specContext;
   @_uriField
-  Uri get id;
-  _Source get source;
-  String get summary;
-  String get type;
+  Uri id;
+  @_objectField
+  APObjectOrLink attachment;
+  @_objectField
+  APObjectOrLink attributedTo;
+  @_objectField
+  APObjectOrLink audience;
+  @_objectField
+  APObjectOrLink bcc;
+  @_objectField
+  APObjectOrLink bto;
+  @_objectField
+  APObjectOrLink cc;
+  @_objectField
+  APObjectOrLink context;
+  _Source source;
+  String summary;
+  String type;
+  Map<String, dynamic> toJson();
 }
 
 @Serializable(autoSnakeCaseNames: false)
-abstract class _Activity implements _APObject {
-  @_contextField
-  Uri get context;
-  @_uriField
-  Uri get id;
-  _Source get source;
-  String get summary;
-  String get type;
+abstract class _Activity extends _APObject {
   @_actorField
-  APActor get actor;
+  APActor actor;
 }
 
 @Serializable(autoSnakeCaseNames: false)
-abstract class _Actor implements _APObject {
-  @_contextField
-  Uri get context;
-  @_uriField
-  Uri get id;
-  String get type;
-  _Source get source;
-
-  String get name;
-  String get summary;
-  Uri get inbox;
-  Uri get outbox;
-  Uri get following;
-  Uri get followers;
-  Uri get liked;
-  String get preferredUsername;
+abstract class _Actor extends _APObject {
+  String name;
+  Uri inbox;
+  Uri outbox;
+  Uri following;
+  Uri followers;
+  Uri liked;
+  String preferredUsername;
 }
 
 @Serializable(autoSnakeCaseNames: false)
-abstract class _Source {
-  String get content;
+class _Source {
+  String content;
   @SerializableField(
       serializer: #_mediaTypeToString,
       deserializer: #_mediaTypeFromString,
       serializesTo: String)
-  MediaType get mediaType;
+  MediaType mediaType;
 }

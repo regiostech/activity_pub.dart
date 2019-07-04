@@ -1,4 +1,5 @@
 import 'package:activity_pub/activity_pub.dart';
+import 'package:http_parser/http_parser.dart';
 
 /*
 {
@@ -16,11 +17,10 @@ import 'package:activity_pub/activity_pub.dart';
 */
 
 main() {
-  var like = Activity(
-    type: 'Like',
-    actor: APActor(link: 'https://dustycloud.org/chris/'),
-    summary: "Chris liked 'Minimal ActivityPub update client'",
-  );
+  var like = Activity()
+    ..type = 'Like'
+    ..actor = APActor(link: 'https://dustycloud.org/chris/')
+    ..summary = "Chris liked 'Minimal ActivityPub update client'";
   print(like.toJson());
   print(activitySerializer.decode(like.toJson()));
 }
