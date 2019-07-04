@@ -22,4 +22,5 @@ main() {
     summary: "Chris liked 'Minimal ActivityPub update client'",
   );
   print(like.toJson());
+  print(activitySerializer.decode(like.toJson()));
 }
