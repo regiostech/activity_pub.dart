@@ -8,12 +8,7 @@ part of 'models.dart';
 
 @generatedSerializable
 class APObject implements _APObject {
-  const APObject(
-      {this.context = 'https://www.w3.org/ns/activitystreams',
-      this.id,
-      this.source,
-      this.summary,
-      this.type});
+  const APObject({this.context, this.id, this.source, this.summary, this.type});
 
   @override
   final Uri context;
@@ -67,7 +62,7 @@ class APObject implements _APObject {
 @generatedSerializable
 class Activity implements _Activity {
   const Activity(
-      {this.context = 'https://www.w3.org/ns/activitystreams',
+      {this.context,
       this.id,
       this.source,
       this.summary,
@@ -136,7 +131,7 @@ class Activity implements _Activity {
 @generatedSerializable
 class Actor implements _Actor {
   const Actor(
-      {this.context = 'https://www.w3.org/ns/activitystreams',
+      {this.context,
       this.id,
       this.type,
       this.source,
