@@ -20,7 +20,8 @@ main() {
   var like = Activity()
     ..type = 'Like'
     ..actor = APActor(link: 'https://dustycloud.org/chris/')
-    ..summary = "Chris liked 'Minimal ActivityPub update client'";
+    ..summary = "Chris liked 'Minimal ActivityPub update client'"
+    ..cc = APObjectOrLink(link: 'https://e14n.com/evan');
   print(like.toJson());
   print(activitySerializer.decode(like.toJson()));
 }

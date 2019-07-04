@@ -6,12 +6,12 @@ const String w3ActivityStreamsContext = 'https://www.w3.org/ns/activitystreams';
 final Uri w3ActivityStreamsContextUri = Uri.parse(w3ActivityStreamsContext);
 
 APActor _apActorFrom(v) => APActor.fromJson(v);
-APObjectOrLink _apObjectFrom(v) => APObjectOrLink.fromJson(v as Map);
+APObjectOrLink _apObjectFrom(v) => APObjectOrLink.fromJson(v);
 Uri _contextFromString(v) =>
     v is String ? Uri.parse(v) : w3ActivityStreamsContextUri;
 MediaType _mediaTypeFromString(v) => MediaType.parse(v as String);
-Object _apActorTo(APActor a) => a.toJson();
-Object _apObjectTo(APObjectOrLink a) => a.toJson();
+Object _apActorTo(APActor a) => a?.toJson();
+Object _apObjectTo(APObjectOrLink a) => a?.toJson();
 String _mediaTypeToString(MediaType m) => m.toString();
 Uri _uriFromString(v) => Uri.parse(v as String);
 String _uriToString(Uri u) => u.toString();
@@ -94,6 +94,19 @@ class ObjectOrLink<T extends _APObject> {
       return _list.map((i) => i.toJson()).toList();
     } else {
       return null;
+    }
+  }
+
+  @override
+  String toString() {
+    if (_link != null) {
+      return _link.toString();
+    } else if (_object != null) {
+      return _object.toString();
+    } else if (_list != null) {
+      return _list.toString();
+    } else {
+      return null.toString();
     }
   }
 }
