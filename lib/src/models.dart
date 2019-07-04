@@ -43,7 +43,7 @@ class ObjectOrLink<T extends _APObject> {
       throw FormatException(
           'An object, link, and/or list cannot be present together.');
     } else {
-      _list = list is List<ObjectOrLink<T>> ? list : list.toList();
+      _list = list is List<ObjectOrLink<T>> ? list : list?.toList();
       _object = object;
       if (link != null) {
         if (link is Uri) {
