@@ -1,0 +1,12 @@
+name: activity_pub
+version: 0.0.0
+environment:
+  sdk: ">=2.0.0 <3.0.0"
+dependencies:
+  angel_serialize: ^2.0.0
+  http: ^0.12.0
+  http_parser: ^3.0.0
+dev_dependencies:
+  angel_serialize_generator: ^2.0.0
+  build_runner: ^1.0.0
+  pedantic: ^1.0.0
