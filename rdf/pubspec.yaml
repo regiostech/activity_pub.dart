@@ -1,0 +1,12 @@
+name: rdf
+version: 0.0.0
+description: RDF, JSON-LD, Turtle, normalization, algorithms, and other support in Dart.
+homepage: https://github.com/thosakwe/json_ld.dart
+environment:
+  sdk: ">=2.0.0 <3.0.0"
+dependencies:
+  crypto: ^2.0.0
+  http: ^0.12.0
+dev_dependencies:
+  pedantic: ^1.0.0
+  test: ^1.0.0
