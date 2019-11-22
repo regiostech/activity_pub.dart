@@ -320,13 +320,13 @@
       "languageVersion": "2.0"
     },
     {
-      "name": "json_ld",
+      "name": "rdf",
       "rootUri": "../",
       "packageUri": "lib/",
       "languageVersion": "2.0"
     }
   ],
-  "generated": "2019-11-22T16:05:02.443183Z",
+  "generated": "2019-11-22T16:08:13.096147Z",
   "generator": "pub",
   "generatorVersion": "2.7.0-dev.1.0"
 }
