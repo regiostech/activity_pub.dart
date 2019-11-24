@@ -1,9 +1,8 @@
+import 'list_or.dart';
 import 'node_object.dart';
 
 class Document {
-  var nodes = <NodeObject>[];
+  ListOr<NodeObject> root;
 
-  Document({Iterable<NodeObject> nodes}) {
-    this.nodes.addAll(nodes ?? []);
-  }
+  Document({this.root});
 }
