@@ -13,10 +13,12 @@ class Triple {
   TripleObject _object;
 
   factory Triple.fromIterable(Iterable it) {
-    return Triple(it.elementAt(0), it.elementAt(1), it.elementAt(2));
+    return Triple.from(it.elementAt(0), it.elementAt(1), it.elementAt(2));
   }
 
-  Triple(subject, predicate, object) {
+  Triple(this._subject, this._predicate, this._object);
+
+  Triple.from(subject, predicate, object) {
     _subject = TripleSubject(subject);
     _object = TripleObject(object);
     if (predicate is Uri) {
