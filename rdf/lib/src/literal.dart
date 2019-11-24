@@ -5,14 +5,15 @@ class Literal {
   static final Uri langStringIri =
       Uri.parse('http://www.w3.org/1999/02/22-rdf-syntax-ns#langString');
 
-  String form;
-  Uri dataType;
+  String _form;
+  Uri _dataType;
   String _languageTag;
+  var _value;
 
-  Literal(this.form, this.dataType);
+  Literal(this._form, this._dataType);
 
-  Literal.languageTaggedString(this.form, String languageTag)
-      : dataType = langStringIri,
+  Literal.languageTaggedString(this._form, String languageTag)
+      : _dataType = langStringIri,
         _languageTag = languageTag.toLowerCase() {
     if (languageTag.isEmpty) {
       throw ArgumentError.value(
@@ -20,20 +21,44 @@ class Literal {
     }
   }
 
-  bool get isLanguageTaggedString => _languageTag != null;
+  String get form => _form;
+
+  Uri get dataType => _dataType;
 
   String get languageTag => _languageTag;
 
+  set form(String value) {
+    _form = value;
+    _value = null;
+  }
+
+  set dataType(Uri value) {
+    _dataType = value;
+    _value = null;
+  }
+
+  set languageTag(String value) {
+    _dataType = langStringIri;
+    _languageTag = value;
+    _value = null;
+  }
+
+  bool get isLanguageTaggedString => _languageTag != null;
+
   Object get value {
-    if (isLanguageTaggedString) {
-      return MapEntry(form, _languageTag);
+    if (_value != null) {
+      return _value;
     }
 
-    var xsdName = DataType.extractXsdType(dataType);
+    if (isLanguageTaggedString) {
+      return _value = MapEntry(_form, _languageTag);
+    }
+
+    var xsdName = DataType.extractXsdType(_dataType);
     var xsdType = DataType.xsdTypes[xsdName];
     if (xsdType != null) {
       try {
-        return xsdType.parse(form);
+        return _value = xsdType.parse(_form);
       } on FormatException {
         // Otherherwise, the literal is ill-typed, just return null.
         return null;
@@ -42,4 +67,16 @@ class Literal {
       return null;
     }
   }
+
+  bool isTermEqualTo(Literal other) {
+    return _form == other._form &&
+        _dataType == other._dataType &&
+        _languageTag == other._languageTag;
+  }
+
+  @override
+  int get hashCode => value.hashCode;
+
+  @override
+  bool operator ==(other) => other is Literal && value == other.value;
 }
