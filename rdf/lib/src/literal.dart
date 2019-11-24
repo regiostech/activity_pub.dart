@@ -1,4 +1,5 @@
 import 'package:quiver_hashcode/hashcode.dart';
+import 'data_type.dart';
 
 class Literal {
   static final Uri langStringIri =
@@ -27,8 +28,16 @@ class Literal {
     if (isLanguageTaggedString) {
       return MapEntry(form, _languageTag);
     }
-    // TODO: Data types
-    else if (true) {
+
+    var xsdName = DataType.extractXsdType(dataType);
+    var xsdType = DataType.xsdTypes[xsdName];
+    if (xsdType != null) {
+      try {
+        return xsdType.parse(form);
+      } on FormatException {
+        // Otherherwise, the literal is ill-typed, just return null.
+        return null;
+      }
     } else {
       return null;
     }
