@@ -1,4 +1,3 @@
-import 'package:quiver_hashcode/hashcode.dart';
 import 'data_type.dart';
 
 class Literal {
