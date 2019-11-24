@@ -5,6 +5,9 @@ const BlankNode blankNode = BlankNode._();
 
 class BlankNode {
   const BlankNode._();
+
+  @override
+  String toString() => '<blank node>';
 }
 
 class Triple {
@@ -46,6 +49,9 @@ class Triple {
       _subject == other._subject &&
       _predicate == other._predicate &&
       _object == other._object;
+
+  @override
+  String toString() => '$_subject <$_predicate> $_object .';
 }
 
 class TripleSubject {
@@ -78,6 +84,15 @@ class TripleSubject {
       other is TripleSubject &&
       _iri == other._iri &&
       _blankNode == other._blankNode;
+
+  @override
+  String toString() {
+    if (_iri != null) {
+      return '<$_iri>';
+    } else {
+      return _blankNode.toString();
+    }
+  }
 }
 
 class TripleObject<T> {
@@ -121,4 +136,15 @@ class TripleObject<T> {
       _iri == other._iri &&
       _literal == other._literal &&
       _blankNode == other._blankNode;
+
+  @override
+  String toString() {
+    if (_iri != null) {
+      return '<$_iri>';
+    } else if (_blankNode != null) {
+      return _blankNode.toString();
+    } else {
+      return _literal.value.toString();
+    }
+  }
 }
