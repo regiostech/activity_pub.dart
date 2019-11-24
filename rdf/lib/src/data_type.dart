@@ -15,7 +15,16 @@ abstract class DataType<T> {
     return null;
   }
 
-  static const Map<String, DataType> xsdTypes = {};
+  // TODO: The rest (there are so many)...
+  static const Map<String, DataType> xsdTypes = {
+    'string': StringDataType(),
+    'boolean': BooleanDataType(),
+    'decimal': DecimalDataType(),
+    'integer': IntegerDataType(),
+    'double': DoubleDataType(),
+    'float': FloatDataType(),
+    'date': DateDataType(),
+  };
 }
 
 class StringDataType implements DataType<String> {
@@ -82,6 +91,7 @@ class FloatDataType extends DoubleDataType {
   const FloatDataType();
 }
 
+// TODO: Split out XSD date parser into separate class
 class DateDataType implements DataType<DateTime> {
   const DateDataType();
 
