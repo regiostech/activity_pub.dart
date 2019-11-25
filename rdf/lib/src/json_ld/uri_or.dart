@@ -17,4 +17,7 @@ class UriOr<T> {
   Uri get asUri => _uri;
 
   UriOr<T> copy() => UriOr._(_value, _uri);
+
+  @override
+  String toString() => _uri?.toString() ?? _value.toString();
 }

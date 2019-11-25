@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:rdf/rdf.dart';
+import 'compact_iri.dart';
 import 'context.dart';
 import 'document_loader.dart';
 import 'exception.dart';
@@ -291,7 +292,7 @@ class Processor {
           throw JsonLDException('invalid reverse property',
               message: containerValue.toString());
         }
-        definition.containerMapping = containerValue;
+        definition.containerMapping = containerValue as String;
       }
       // 11.5) Set the reverse property flag of definition to true.
       definition.reverseProperty = true;
@@ -303,6 +304,104 @@ class Processor {
     }
     // 12.) Set the reverse property flag of definition to false.
     definition.reverseProperty = false;
+    // 13.) If value contains the key @id and its value does not equal term:
+    if (valueMap.containsKey('@id') && valueMap['@id'] != term) {
+      // 13.1) If the value associated with the @id key is not a string, an invalid IRI mapping error has been
+      // detected and processing is aborted.
+      if (valueMap['@id'] is! String) {
+        throw JsonLDException('invalid IRI mapping',
+            message: valueMap['@id'].toString());
+      }
+      // 13.2) Otherwise, set the IRI mapping of definition to the result of using the IRI Expansion algorithm,
+      // passing active context, the value associated with the @id key for value, true for vocab, false for
+      // document relative, local context, and defined. If the resulting IRI mapping is neither a keyword,
+      // nor an absolute IRI, nor a blank node identifier, an invalid IRI mapping error has been detected
+      // and processing is aborted; if it equals @context, an invalid keyword alias error has been detected
+      // and processing is aborted.
+      var id = valueMap['@id'] as String;
+      var result = await expandIri(activeContext, id, baseIri,
+          vocab: true,
+          documentRelative: false,
+          localContext: localContext,
+          defined: defined);
+      if (!keywords.contains(result) &&
+          ((result is! Uri) || (!((result as Uri).isAbsolute))) &&
+          result is! BlankNode) {
+        throw JsonLDException('invalid IRI mapping',
+            message: result.toString());
+      } else if (result == '@context') {
+        throw JsonLDException('invalid keyword alias',
+            message: result.toString());
+      }
+      definition.iriMapping = result;
+    }
+    // 14.) Otherwise if the term contains a colon (:):
+    else if (term.contains(':')) {
+      // 14.1) If term is a compact IRI with a prefix that is a key in local context a dependency has been
+      // found. Use this algorithm recursively passing active context, local context, the prefix as term,
+      // and defined.
+      var termUri = Uri.tryParse(term);
+      var compactUri = CompactIri.from(termUri);
+      if (compactUri != null && localContext.containsKey(compactUri.prefix)) {
+        await createTermDefinition(
+            activeContext, localContext, baseIri, compactUri.prefix, defined);
+      }
+      // 14.2) If term's prefix has a term definition in active context, set the IRI mapping of definition
+      // to the result of concatenating the value associated with the prefix's IRI mapping and the term's
+      // suffix.
+      if (activeContext.termDefinitions.containsKey(compactUri.prefix)) {
+        var prefixMapping =
+            activeContext.termDefinitions[compactUri.prefix].iriMapping;
+        definition.iriMapping = prefixMapping.toString() + compactUri.suffix;
+      }
+      // 14.3) Otherwise, term is an absolute IRI or blank node identifier. Set the IRI mapping of definition
+      // to term.
+      else {
+        definition.iriMapping = termUri ?? term;
+      }
+    }
+    // 15.) Otherwise, if active context has a vocabulary mapping, the IRI mapping of definition is set to
+    // the result of concatenating the value associated with the vocabulary mapping and term. If it does
+    // not have a vocabulary mapping, an invalid IRI mapping error been detected and processing is aborted.
+    else if (activeContext.vocabularyMapping != null) {
+      definition.iriMapping = activeContext.vocabularyMapping.toString() + term;
+    } else {
+      throw JsonLDException('invalid IRI mapping',
+          message: 'active context has not vocabulary mapping');
+    }
+    // 16.) If value contains the key @container:
+    if (valueMap.containsKey('@container')) {
+      // 16.1) Initialize container to the value associated with the @container key, which must be either @list,
+      // @set, @index, or @language. Otherwise, an invalid container mapping error has been detected and
+      // processing is aborted.
+      var containerValue = valueMap['@container'];
+      if (containerValue != '@list' &&
+          containerValue != '@set' &&
+          containerValue != '@index' &&
+          containerValue != '@language') {
+        throw JsonLDException('invalid container mapping',
+            message: containerValue.toString());
+      }
+      // 16.2) Set the container mapping of definition to container.
+      definition.containerMapping = containerValue as String;
+    }
+    // 17.) If value contains the key @language and does not contain the key @type:
+    if (valueMap.containsKey('@language') && !valueMap.containsKey('@type')) {
+      // 17.1) Initialize language to the value associated with the @language key, which must be either null or a
+      // string. Otherwise, an invalid language mapping error has been detected and processing is aborted.
+      var language = valueMap['@language'];
+      if (language != null && language is! String) {
+        throw JsonLDException('invalid language mapping',
+            message: language.toString());
+      }
+      // 17.2) If language is a string set it to lowercased language. Set the language mapping of definition to
+      // language.
+      definition.languageMapping = (language as String)?.toLowerCase();
+    }
+    // 18.) Set the term definition of term in active context to definition and set the value associated with
+    // defined's key term to true.
+    activeContext.termDefinitions[term] = definition;
+    defined[term] = true;
   }
 
   Future<Object> expandIri(Context activeContext, String value, Uri baseIri,

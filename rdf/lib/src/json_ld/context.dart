@@ -26,6 +26,6 @@ class TermDefinition {
   bool reverseProperty = false;
   // Uri typeMapping;
   Object typeMapping;
-  // var containerMapping = {};
-  Object containerMapping;
+  String containerMapping;
+  String languageMapping;
 }
