@@ -1,16 +1,23 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
-class ResourceFetcher {
+class DocumentLoader {
   final http.Client httpClient;
   var _cache = <Uri, _CachedResponse>{};
 
-  ResourceFetcher({http.Client httpClient})
+  DocumentLoader({http.Client httpClient})
       : this.httpClient = httpClient ?? http.Client();
 
+  Future<Object> dereference(Uri url) async {
+    // TODO: Throw errors
+    var response = await getUrl(url);
+    return json.decode(response.body);
+  }
+
   /// Fetches a resource from the Web; honoring caching headers.
-  Future<http.Response> fetch(Uri url) async {
+  Future<http.Response> getUrl(Uri url) async {
     var cached = _cache[url];
     var now = DateTime.now();
 

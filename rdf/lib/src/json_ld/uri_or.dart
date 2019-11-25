@@ -2,6 +2,8 @@ class UriOr<T> {
   T _value;
   Uri _uri;
 
+  UriOr._(this._value, this._uri);
+
   UriOr.value(this._value);
 
   UriOr.uri(this._uri);
@@ -13,4 +15,6 @@ class UriOr<T> {
   T get asValue => _value;
 
   Uri get asUri => _uri;
+
+  UriOr<T> copy() => UriOr._(_value, _uri);
 }
