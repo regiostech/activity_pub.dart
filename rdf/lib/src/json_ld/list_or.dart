@@ -1,3 +1,5 @@
+// TODO: Eventually remove this
+@deprecated
 class ListOr<T> {
   T _single;
   List<T> _list;
