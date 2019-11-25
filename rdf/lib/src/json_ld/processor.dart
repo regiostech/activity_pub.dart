@@ -9,8 +9,9 @@ import 'uri_or.dart';
 
 class Processor {
   final DocumentLoader documentLoader;
+  final Uri baseIri;
 
-  Processor({DocumentLoader documentLoader})
+  Processor(this.baseIri, {DocumentLoader documentLoader})
       : this.documentLoader = documentLoader ?? DocumentLoader();
 
   Object _copy(obj) {
@@ -23,8 +24,7 @@ class Processor {
     }
   }
 
-  Future<Context> processLocalContext(
-      Context activeContext, localContext, Uri baseIri,
+  Future<Context> processLocalContext(Context activeContext, localContext,
       {bool isRemoteContext = false, List<Uri> remoteContexts}) async {
     // This algorithm specifies how a new active context is updated with
     // a local context. The algorithm takes three input variables: an
@@ -78,7 +78,7 @@ class Processor {
 
         /// 3.2.4) Set result to the result of recursively calling this algorithm, passing
         /// result for active context, context for local context, and remote contexts.
-        result = await processLocalContext(result, dereferencedContext, baseIri,
+        result = await processLocalContext(result, dereferencedContext,
             remoteContexts: remoteContexts);
       }
 
@@ -168,8 +168,7 @@ class Processor {
       // key, and defined.
       for (var entry in contextMap.entries) {
         if (!const ['@base', '@vocab', '@language'].contains(entry.key)) {
-          await createTermDefinition(
-              result, contextMap, baseIri, entry.key, defined);
+          await createTermDefinition(result, contextMap, entry.key, defined);
         }
       }
     }
@@ -178,7 +177,7 @@ class Processor {
   }
 
   Future<void> createTermDefinition(Context activeContext, Map localContext,
-      Uri baseIri, String term, Map<String, bool> defined) async {
+      String term, Map<String, bool> defined) async {
     // 1.) If defined contains the key term and the associated value is true (indicating that the term
     // definition has already been created), return. Otherwise, if the value is false, a cyclic IRI
     // mapping error has been detected and processing is aborted.
@@ -234,7 +233,7 @@ class Processor {
         // for value, true for vocab, false for document relative, local context, and defined. If the
         // expanded type is neither @id, nor @vocab, nor an absolute IRI, an invalid type mapping error
         // has been detected and processing is aborted.
-        var expandedType = await expandIri(activeContext, type, baseIri,
+        var expandedType = await expandIri(activeContext, type,
             vocab: true,
             documentRelative: false,
             localContext: localContext,
@@ -270,7 +269,7 @@ class Processor {
       // node identifier, i.e., it contains no colon (:), an invalid IRI mapping error has been detected and
       // processing is aborted.
       var reverseValue = valueMap['@reverse'] as String;
-      var result = await expandIri(activeContext, reverseValue, baseIri,
+      var result = await expandIri(activeContext, reverseValue,
           vocab: true,
           documentRelative: false,
           localContext: localContext,
@@ -319,7 +318,7 @@ class Processor {
       // and processing is aborted; if it equals @context, an invalid keyword alias error has been detected
       // and processing is aborted.
       var id = valueMap['@id'] as String;
-      var result = await expandIri(activeContext, id, baseIri,
+      var result = await expandIri(activeContext, id,
           vocab: true,
           documentRelative: false,
           localContext: localContext,
@@ -344,7 +343,7 @@ class Processor {
       var compactUri = CompactIri.from(termUri);
       if (compactUri != null && localContext.containsKey(compactUri.prefix)) {
         await createTermDefinition(
-            activeContext, localContext, baseIri, compactUri.prefix, defined);
+            activeContext, localContext, compactUri.prefix, defined);
       }
       // 14.2) If term's prefix has a term definition in active context, set the IRI mapping of definition
       // to the result of concatenating the value associated with the prefix's IRI mapping and the term's
@@ -404,7 +403,7 @@ class Processor {
     defined[term] = true;
   }
 
-  Future<Object> expandIri(Context activeContext, String value, Uri baseIri,
+  Future<Object> expandIri(Context activeContext, String value,
       {Map localContext,
       Map<String, bool> defined,
       bool vocab = false,
@@ -420,8 +419,7 @@ class Processor {
     if (localContext != null &&
         localContext.containsKey(value) &&
         defined[value] != true) {
-      await createTermDefinition(
-          activeContext, localContext, baseIri, value, defined);
+      await createTermDefinition(activeContext, localContext, value, defined);
     }
     // 3.) If vocab is true and the active context has a term definition for value, return the associated
     // IRI mapping.
@@ -450,7 +448,7 @@ class Processor {
           localContext.containsKey(prefix) &&
           defined[prefix] != true) {
         await createTermDefinition(
-            activeContext, localContext, baseIri, prefix, defined);
+            activeContext, localContext, prefix, defined);
       }
       // 4.4) If active context contains a term definition for prefix, return the result of concatenating the
       // IRI mapping associated with prefix and suffix.
@@ -476,5 +474,68 @@ class Processor {
     }
     // 7.) Return value as is.
     return value;
+  }
+
+  Future<Object> expandValue(
+      Context activeContext, String activeProperty, Object value) async {
+    // 1.) If the active property has a type mapping in active context that is @id, return a new JSON
+    // object containing a single key-value pair where the key is @id and the value is the result of
+    // using the IRI Expansion algorithm, passing active context, value, and true for document relative.
+    if (activeContext.termDefinitions[activeProperty]?.typeMapping == '@id') {
+      if (value is String) {
+        return {
+          '@id': await expandIri(activeContext, value, documentRelative: true)
+        };
+      } else {
+        throw JsonLDException('invalid @id value', message: value.toString());
+      }
+    }
+    // 2.) If active property has a type mapping in active context that is @vocab, return a new JSON
+    // object containing a single key-value pair where the key is @id and the value is the result of
+    // using the IRI Expansion algorithm, passing active context, value, true for vocab, and true for
+    // document relative.
+    if (activeContext.termDefinitions[activeProperty]?.typeMapping ==
+        '@vocab') {
+      if (value is String) {
+        return {
+          '@id': await expandIri(activeContext, value,
+              documentRelative: true, vocab: true)
+        };
+      } else {
+        // TODO: There seems to be no official error for this...?
+        throw JsonLDException('invalid @vocab value',
+            message: value.toString());
+      }
+    }
+    // 3.) Otherwise, initialize result to a JSON object with an @value member whose value is set to value.
+    var result = <String, dynamic>{'@value': value};
+    // 4.) If active property has a type mapping in active context, add an @type member to result and set
+    // its value to the value associated with the type mapping.
+    var typeMapping =
+        activeContext.termDefinitions[activeProperty]?.typeMapping;
+    if (typeMapping != null) {
+      result['@type'] = typeMapping;
+    }
+    // 5.) Otherwise, if value is a string:
+    else if (value is String) {
+      // 5.1) If a language mapping is associated with active property in active context, add an @language
+      // to result and set its value to the language code associated with the language mapping; unless the
+      // language mapping is set to null in which case no member is added.
+      if (activeContext.termDefinitions.containsKey(activeProperty)) {
+        var languageMapping =
+            activeContext.termDefinitions[activeProperty]?.languageMapping;
+        if (languageMapping != null) {
+          result['@language'] = languageMapping;
+        }
+      }
+
+      // 5.2) Otherwise, if the active context has a default language, add an @language to result and set
+      // its value to the default language.
+      else if (activeContext.defaultLanguage != null) {
+        result['@language'] = activeContext.defaultLanguage;
+      }
+    }
+    // 6.) Return result.
+    return result;
   }
 }
