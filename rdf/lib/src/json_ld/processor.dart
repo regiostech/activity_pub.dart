@@ -3,6 +3,7 @@ import 'package:rdf/rdf.dart';
 import 'context.dart';
 import 'document_loader.dart';
 import 'exception.dart';
+import 'keywords.dart';
 import 'uri_or.dart';
 
 class Processor {
@@ -10,6 +11,16 @@ class Processor {
 
   Processor({DocumentLoader documentLoader})
       : this.documentLoader = documentLoader ?? DocumentLoader();
+
+  Object _copy(obj) {
+    if (obj is Map) {
+      return obj.map((k, v) => MapEntry(k, _copy(v)));
+    } else if (obj is Iterable) {
+      return obj.map(_copy).toList();
+    } else {
+      return obj;
+    }
+  }
 
   Future<Context> processLocalContext(
       Context activeContext, localContext, Uri baseIri,
@@ -77,7 +88,7 @@ class Processor {
             message: context.toString());
       }
 
-      var contextMap = context as Map;
+      var contextMap = (context as Map).cast<String, dynamic>();
 
       /// 3.4) If context has an @base key and remote contexts is empty, i.e., the currently
       /// being processed context is not a remote context:
@@ -156,11 +167,215 @@ class Processor {
       // key, and defined.
       for (var entry in contextMap.entries) {
         if (!const ['@base', '@vocab', '@language'].contains(entry.key)) {
-          await createTermDefinition(result, contextMap, entry.key, defined);
+          await createTermDefinition(
+              result, contextMap, baseIri, entry.key, defined);
         }
       }
     }
     // 4.) Return result.
     return result;
+  }
+
+  Future<void> createTermDefinition(Context activeContext, Map localContext,
+      Uri baseIri, String term, Map<String, bool> defined) async {
+    // 1.) If defined contains the key term and the associated value is true (indicating that the term
+    // definition has already been created), return. Otherwise, if the value is false, a cyclic IRI
+    // mapping error has been detected and processing is aborted.
+    if (defined[term] == true) {
+      return;
+    } else if (defined[term] == false) {
+      throw JsonLDException('cyclic IRI mapping error', message: term);
+    }
+    // 2.) Set the value associated with defined's term key to false. This indicates that the term
+    // definition is now being created but is not yet complete.
+    defined[term] = false;
+    // 3.) Since keywords cannot be overridden, term must not be a keyword. Otherwise, a keyword
+    // redefinition error has been detected and processing is aborted.
+    if (keywords.contains(term)) {
+      throw JsonLDException('keyword redefinition error', message: term);
+    }
+    // 4.) Remove any existing term definition for term in active context.
+    activeContext.termDefinitions.remove(term);
+    // 5.) Initialize value to a copy of the value associated with the key term in local context.
+    var value = _copy(localContext[term]);
+    // 6.) If value is null or value is a JSON object containing the key-value pair @id-null, set
+    // the term definition in active context to null, set the value associated with defined's key
+    // term to true, and return.
+    if (value == null ||
+        (value is Map && value.containsKey('@id') && value['@id'] == null)) {
+      activeContext.termDefinitions[term] = null;
+      defined[term] = true;
+      return;
+    }
+    // 7.) Otherwise, if value is a string, convert it to a JSON object consisting of a single member
+    // whose key is @id and whose value is value.
+    Map valueMap;
+    if (value is String) {
+      valueMap = {'@id': value};
+    }
+    // 8.) Otherwise, value must be a JSON object, if not, an invalid term definition error has been
+    // detected and processing is aborted.
+    else if (value is Map) {
+      valueMap = value;
+    } else {
+      throw JsonLDException('invalid term definition',
+          message: value?.toString());
+    }
+    // 9.) Create a new term definition, definition.
+    var definition = TermDefinition();
+    // 10.) If value contains the key @type:
+    if (valueMap.containsKey('@type')) {
+      // 10.1) Initialize type to the value associated with the @type key, which must be a string.
+      // Otherwise, an invalid type mapping error has been detected and processing is aborted.
+      var type = valueMap['@type'];
+      if (type is String) {
+        // 10.2) Set type to the result of using the IRI Expansion algorithm, passing active context, type
+        // for value, true for vocab, false for document relative, local context, and defined. If the
+        // expanded type is neither @id, nor @vocab, nor an absolute IRI, an invalid type mapping error
+        // has been detected and processing is aborted.
+        var expandedType = await expandIri(activeContext, type, baseIri,
+            vocab: true,
+            documentRelative: false,
+            localContext: localContext,
+            defined: defined);
+        // 10.3) Set the type mapping for definition to type.
+        if (expandedType != '@id' &&
+            expandedType != '@vocab' &&
+            ((expandedType is! Uri) || (!((expandedType as Uri).isAbsolute)))) {
+          throw JsonLDException('invalid type mapping',
+              message: expandedType?.toString());
+        }
+        definition.typeMapping = expandedType;
+      } else {
+        throw JsonLDException('invalid type mapping', message: type.toString());
+      }
+    }
+    // 11.) If value contains the key @reverse:
+    if (valueMap.containsKey('@reverse')) {
+      // 11.1) If value contains an @id, member, an invalid reverse property error has been detected
+      // and processing is aborted.
+      if (valueMap.containsKey('@id')) {
+        throw JsonLDException('invalid reverse property');
+      }
+      // 11.2) If the value associated with the @reverse key is not a string, an invalid IRI mapping error
+      // has been detected and processing is aborted.
+      if (valueMap['@reverse'] is! String) {
+        throw JsonLDException('invalid IRI mapping',
+            message: valueMap['@reverse']?.toString());
+      }
+      // 11.3) Otherwise, set the IRI mapping of definition to the result of using the IRI Expansion algorithm,
+      // passing active context, the value associated with the @reverse key for value, true for vocab, false
+      // for document relative, local context, and defined. If the result is neither an absolute IRI nor a blank
+      // node identifier, i.e., it contains no colon (:), an invalid IRI mapping error has been detected and
+      // processing is aborted.
+      var reverseValue = valueMap['@reverse'] as String;
+      var result = await expandIri(activeContext, reverseValue, baseIri,
+          vocab: true,
+          documentRelative: false,
+          localContext: localContext,
+          defined: defined);
+      if (result is! BlankNode &&
+          ((result is! Uri) || (!((result as Uri).isAbsolute)))) {
+        throw JsonLDException('invalid IRI mapping',
+            message: result?.toString());
+      }
+      definition.iriMapping = result;
+      // 11.4) If value contains an @container member, set the container mapping of definition to its value; if
+      // its value is neither @set, nor @index, nor null, an invalid reverse property error has been detected
+      // (reverse properties only support set- and index-containers) and processing is aborted.
+      if (valueMap.containsKey('@container')) {
+        var containerValue = valueMap['@container'];
+        if (containerValue != null &&
+            containerValue != '@set' &&
+            containerValue != '@index') {
+          throw JsonLDException('invalid reverse property',
+              message: containerValue.toString());
+        }
+        definition.containerMapping = containerValue;
+      }
+      // 11.5) Set the reverse property flag of definition to true.
+      definition.reverseProperty = true;
+      // 11.6) Set the term definition of term in active context to definition and the value associated with
+      // defined's key term to true and return.
+      activeContext.termDefinitions[term] = definition;
+      defined[term] = true;
+      return;
+    }
+    // 12.) Set the reverse property flag of definition to false.
+    definition.reverseProperty = false;
+  }
+
+  Future<Object> expandIri(Context activeContext, String value, Uri baseIri,
+      {Map localContext,
+      Map<String, bool> defined,
+      bool vocab = false,
+      bool documentRelative = false}) async {
+    // 1.) If value is a keyword or null, return value as is.
+    if (value == null || keywords.contains(value)) {
+      return null;
+    }
+    // 2.) If local context is not null, it contains a key that equals value, and the value associated
+    // with the key that equals value in defined is not true, invoke the Create Term Definition algorithm,
+    // passing active context, local context, value as term, and defined. This will ensure that a term
+    // definition is created for value in active context during Context Processing.
+    if (localContext != null &&
+        localContext.containsKey(value) &&
+        defined[value] != true) {
+      await createTermDefinition(
+          activeContext, localContext, baseIri, value, defined);
+    }
+    // 3.) If vocab is true and the active context has a term definition for value, return the associated
+    // IRI mapping.
+    if (vocab && activeContext.termDefinitions.containsKey(value)) {
+      return activeContext.termDefinitions[value].iriMapping;
+    }
+    // 4.) If value contains a colon (:), it is either an absolute IRI, a compact IRI, or a blank node
+    // identifier:
+    if (value.contains(':')) {
+      // 4.1) Split value into a prefix and suffix at the first occurrence of a colon (:).
+      var idx = value.indexOf(':');
+      var prefix = value.substring(0, idx);
+      var suffix = value.substring(idx);
+      // 4.2) If prefix is underscore (_) or suffix begins with double-forward-slash (//), return value as
+      // it is already an absolute IRI or a blank node identifier.
+      if (prefix == '_') {
+        return blankNode;
+      } else if (suffix.startsWith('//')) {
+        return Uri.parse(value);
+      }
+      // 4.3) If local context is not null, it contains a key that equals prefix, and the value associated with
+      // the key that equals prefix in defined is not true, invoke the Create Term Definition algorithm, passing
+      // active context, local context, prefix as term, and defined. This will ensure that a term definition is
+      // created for prefix in active context during Context Processing.
+      if (localContext != null &&
+          localContext.containsKey(prefix) &&
+          defined[prefix] != true) {
+        await createTermDefinition(
+            activeContext, localContext, baseIri, prefix, defined);
+      }
+      // 4.4) If active context contains a term definition for prefix, return the result of concatenating the
+      // IRI mapping associated with prefix and suffix.
+      if (activeContext.termDefinitions.containsKey(prefix)) {
+        var mapping = activeContext.termDefinitions[prefix].iriMapping;
+        return Uri.parse(mapping.toString() + suffix);
+      }
+      // 4.5) Return value as it is already an absolute IRI.
+      return Uri.parse(value);
+    }
+    // 5.) If vocab is true, and active context has a vocabulary mapping, return the result of concatenating the
+    // vocabulary mapping with value.
+    if (vocab && activeContext.vocabularyMapping?.asUri != null) {
+      return Uri.parse(
+          activeContext.vocabularyMapping.asUri.toString() + value);
+    }
+    // 6.) Otherwise, if document relative is true, set value to the result of resolving value against the base IRI.
+    // Only the basic algorithm in section 5.2 of [RFC3986] is used; neither Syntax-Based Normalization nor
+    // Scheme-Based Normalization are performed. Characters additionally allowed in IRI references are treated in
+    // the same way that unreserved characters are treated in URI references, per section 6.5 of [RFC3987].
+    if (documentRelative) {
+      return baseIri.resolve(value);
+    }
+    // 7.) Return value as is.
+    return value;
   }
 }
