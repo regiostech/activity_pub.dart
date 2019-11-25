@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 import 'package:rdf/rdf.dart';
 import 'compact_iri.dart';
 import 'context.dart';
@@ -21,6 +22,300 @@ class Processor {
       return obj.map(_copy).toList();
     } else {
       return obj;
+    }
+  }
+
+  bool _isScalar(obj) => obj is String || obj is num || obj is bool;
+
+  /// This algorithm expands a JSON-LD document, such that all context definitions are removed, all terms
+  /// and compact IRIs are expanded to absolute IRIs, blank node identifiers, or keywords and all JSON-LD
+  /// values are expressed in arrays in expanded form.
+  Future<Object> expand(Object element,
+      {Context activeContext, String activeProperty}) async {
+    activeContext ??= Context();
+    // 1.) If element is null, return null.
+    if (element == null) {
+      return null;
+    }
+    // 2.) If element is a scalar,
+    if (_isScalar(element)) {
+      // 2.1) If active property is null or @graph, drop the free-floating scalar by returning null.
+      if (activeProperty == null || activeProperty == '@graph') {
+        return null;
+      }
+      // 2.2) Return the result of the Value Expansion algorithm, passing the active context, active
+      // property, and element as value.
+      return await expandValue(activeContext, activeProperty, element);
+    }
+    // 3.) If element is an array,
+    if (element is Iterable) {
+      // 3.1) Initialize an empty array, result.
+      var result = [];
+      // 3.2) For each item in element:
+      for (var item in element) {
+        // 3.2.1) Initialize expanded item to the result of using this algorithm recursively, passing
+        // active context, active property, and item as element.
+        var expandedItem = await expand(item,
+            activeContext: activeContext, activeProperty: activeProperty);
+        // 3.2.2) If the active property is @list or its container mapping is set to @list, the expanded
+        // item must not be an array or a list object, otherwise a list of lists error has been detected
+        // and processing is aborted.
+        if (activeProperty == '@list' ||
+            activeContext.termDefinitions[activeProperty]?.containerMapping ==
+                '@list') {
+          if (expandedItem is Iterable) {
+            throw JsonLDException('list of lists');
+          }
+        }
+        // 3.2.3) If expanded item is an array, append each of its items to result. Otherwise, if expanded
+        // item is not null, append it to result.
+        if (expandedItem is Iterable) {
+          result.addAll(expandedItem);
+        } else {
+          result.add(expandedItem);
+        }
+      }
+      // 3.3) Return result.
+      return result;
+    }
+    // 4.) Otherwise element is a JSON object.
+    var elementMap = (element as Map).cast<String, dynamic>();
+    // 5.) If element contains the key @context, set active context to the result of the Context Processing
+    // algorithm, passing active context and the value of the @context key as local context.
+    if (elementMap.containsKey('@context')) {
+      activeContext =
+          await processLocalContext(activeContext, elementMap['@context']);
+    }
+    // 6.) Initialize an empty JSON object, result.
+    var result = <String, dynamic>{};
+    // 7.) For each key and value in element, ordered lexicographically by key:
+    var splayElementMap = SplayTreeMap.of(elementMap);
+    for (var entry in splayElementMap.entries) {
+      var key = entry.key, value = entry.value;
+      // 7.1) If key is @context, continue to the next key.
+      if (key == '@context') continue;
+      // 7.2) Set expanded property to the result of using the IRI Expansion algorithm, passing active context,
+      // key for value, and true for vocab.
+      var expandedProperty = await expandIri(activeContext, key, vocab: true);
+      // 7.3) If expanded property is null or it neither contains a colon (:) nor it is a keyword, drop key by
+      // continuing to the next key.
+      if (expandedProperty == null ||
+          (!keywords.contains(expandedProperty) &&
+              ((expandedProperty is! String) ||
+                  !((expandedProperty as String).contains(':'))))) {
+        continue;
+      }
+      // 7.4) If expanded property is a keyword:
+      if (keywords.contains(expandedProperty)) {
+        // 7.4.1.) If active property equals @reverse, an invalid reverse property map error has been detected
+        // and processing is aborted.
+        if (activeProperty == '@reverse') {
+          throw JsonLDException('invalid reverse property map');
+        }
+        // 7.4.2) If result has already an *expanded property* member, an colliding keywords error has been
+        // detected and processing is aborted.
+        if (result.containsKey(expandedProperty)) {
+          throw JsonLDException('colliding keywords',
+              message: expandedProperty as String);
+        }
+        Object expandedValue;
+        // 7.4.3) If expanded property is @id and value is not a string, an invalid @id value error has been
+        // detected and processing is aborted. Otherwise, set expanded value to the result of using the IRI
+        // Expansion algorithm, passing active context, value, and true for document relative.
+        if (expandedProperty == '@id') {
+          if (value is String) {
+            expandedValue =
+                await expandIri(activeContext, value, documentRelative: true);
+          } else {
+            throw JsonLDException('invalid @id value',
+                message: value.toString());
+          }
+        }
+        // 7.4.4.) If expanded property is @type and value is neither a string nor an array of strings, an
+        // invalid type value error has been detected and processing is aborted. Otherwise, set expanded
+        // value to the result of using the IRI Expansion algorithm, passing active context, true for vocab,
+        // and true for document relative to expand the value or each of its items.
+        if (expandedProperty == '@type') {
+          if (value is! String &&
+              ((value is! Iterable) ||
+                  ((value as Iterable).any((x) => x is! String)))) {
+            throw JsonLDException('invalid type value',
+                message: value.toString());
+          } else {
+            if (value is Iterable) {
+              expandedValue =
+                  await Future.forEach<String>(value.cast<String>(), (s) {
+                return expandIri(activeContext, s,
+                    vocab: true, documentRelative: true);
+              });
+            } else {
+              expandedValue = await expandIri(activeContext, value as String,
+                  vocab: true, documentRelative: true);
+            }
+          }
+        }
+        // 7.4.5) If expanded property is @graph, set expanded value to the result of using this algorithm
+        // recursively passing active context, @graph for active property, and value for element.
+        if (expandedProperty == '@graph') {
+          expandedValue = await expand(value,
+              activeContext: activeContext, activeProperty: '@graph');
+        }
+        // 7.4.6) If expanded property is @value and value is not a scalar or null, an invalid value object
+        // value error has been detected and processing is aborted. Otherwise, set expanded value to value.
+        // If expanded value is null, set the @value member of result to null and continue with the next key
+        // from element. Null values need to be preserved in this case as the meaning of an @type member
+        // depends on the existence of an @value member.
+        if (expandedProperty == '@value') {
+          if (value != null && !_isScalar(value)) {
+            throw JsonLDException('invalid value object',
+                message: value.toString());
+          } else {
+            expandedValue = value;
+            if (expandedValue == null) {
+              result['@value'] = null;
+              continue;
+            }
+          }
+        }
+        // 7.4.7) If expanded property is @language and value is not a string, an invalid language-tagged string
+        // error has been detected and processing is aborted. Otherwise, set expanded value to lowercased value.
+        if (expandedProperty == '@language') {
+          if (value is String) {
+            expandedValue = value.toLowerCase();
+          } else {
+            throw JsonLDException('invalid language-tagged string',
+                message: value.toString());
+          }
+        }
+        // 7.4.8) If expanded property is @index and value is not a string, an invalid @index value error has been
+        // detected and processing is aborted. Otherwise, set expanded value to value.
+        if (expandedProperty == '@index') {
+          if (value is String) {
+            expandedValue = value;
+          } else {
+            throw JsonLDException('invalid @index value',
+                message: value.toString());
+          }
+        }
+        // 7.4.9) If expanded property is @list:
+        if (expandedProperty == '@list') {
+          // 7.4.9.1) If active property is null or @graph, continue with the next key from element to remove the
+          // free-floating list.
+          if (activeProperty == null || activeProperty == '@graph') {
+            continue;
+          }
+          // 7.4.9.2) Otherwise, initialize expanded value to the result of using this algorithm recursively passing
+          // active context, active property, and value for element.
+          else {
+            expandedValue = await expand(value,
+                activeContext: activeContext, activeProperty: activeProperty);
+          }
+          // 7.4.9.3) If expanded value is a list object, a list of lists error has been detected and processing is
+          // aborted.
+          if (expandedValue is Iterable) {
+            throw JsonLDException('list of lists');
+          }
+        }
+        // 7.4.10) If expanded property is @set, set expanded value to the result of using this algorithm recursively,
+        // passing active context, active property, and value for element.
+        if (expandedProperty == '@set') {
+          expandedValue = await expand(value,
+              activeContext: activeContext, activeProperty: activeProperty);
+        }
+        // 7.4.11) If expanded property is @reverse and value is not a JSON object, an invalid @reverse value error has
+        // been detected and processing is aborted. Otherwise
+        if (expandedProperty == '@reverse') {
+          if (value is! Map) {
+            throw JsonLDException('invalid @reverse value',
+                message: value.toString());
+          }
+          // 7.4.11.1) Initialize expanded value to the result of using this algorithm recursively, passing active context,
+          // @reverse as active property, and value as element.
+          expandedValue = await expand(value,
+              activeContext: activeContext, activeProperty: '@reverse');
+          // 7.4.11.2) If expanded value contains an @reverse member, i.e., properties that are reversed twice, execute
+          // for each of its property and item the following steps:
+          if (expandedValue is Map && expandedValue.containsKey('@reverse')) {
+            expandedValue.cast<String, dynamic>().forEach((property, item) {
+              // 7.4.11.2.1) If result does not have a property member, create one and set its value to an empty array.
+              if (!result.containsKey(property)) {
+                result[property] = [];
+              }
+              // 7.4.11.2.2) Append item to the value of the property member of result.
+              (result[property] as List).add(item);
+            });
+          }
+          // 7.4.11.3) If expanded value contains members other than @reverse:
+          if (expandedValue is Map &&
+              expandedValue.keys.any((k) => k != '@reverse')) {
+            // 7.4.11.3.1) If result does not have an @reverse member, create one and set its value to an empty JSON object.
+            if (!result.containsKey('@reverse')) {
+              result['@reverse'] = <String, dynamic>{};
+            }
+            // 7.4.11.3.2) Reference the value of the @reverse member in result using the variable reverse map.
+            var reverseMap = result['@reverse'] as Map<String, dynamic>;
+            // 7.4.11.3.3) For each property and items in expanded value other than @reverse:
+            expandedValue.cast<String, Iterable>().forEach((property, items) {
+              if (property != '@reverse') {
+                // 7.4.11.3.3.1) For each item in items:
+                for (var item in items) {
+                  // 7.4.11.3.3.1.1) If item is a value object or list object, an invalid reverse property value has been
+                  // detected and processing is aborted.
+                  if (item is Map &&
+                      (item.containsKey('@value') ||
+                          item.containsKey('@list'))) {
+                    throw JsonLDException('invalid reverse property',
+                        message: item.toString());
+                  }
+                  // 7.4.11.3.3.1.2) If reverse map has no property member, create one and initialize its value to an empty
+                  // array.
+                  reverseMap[property] ??= [];
+                  // 7.4.11.3.3.1.3) Append item to the value of the property member in reverse map.
+                  (reverseMap[property] as List).add(item);
+                }
+              }
+            });
+          }
+          // 7.4.11.4) Continue with the next key from element.
+          continue;
+        }
+        // 7.4.12) Unless expanded value is null, set the expanded property member of result to expanded value.
+        if (expandedValue != null) {
+          result[expandedProperty as String] = expandedValue;
+        }
+        // 7.4.13) Continue with the next key from element.
+        continue;
+      }
+      // 7.5) Otherwise, if key's container mapping in active context is @language and value is a JSON object then
+      // value is expanded from a language map as follows:
+      else if (activeContext.termDefinitions[key]?.containerMapping ==
+              '@language' &&
+          value is Map) {
+        // 7.5.1) Initialize expanded value to an empty array.
+        var expandedValue = [];
+        // 7.5.2) For each key-value pair language-language value in value, ordered lexicographically by language:
+        var splayValueMap = SplayTreeMap.of(value.cast<String, dynamic>());
+        splayValueMap.forEach((language, value) {
+          // 7.5.2.1) If language value is not an array set it to an array containing only language value.
+          var languageValue = value is Iterable ? value.toList() : [value];
+          // 7.5.2.2) For each item in language value:
+          for (var item in languageValue) {
+            // 7.5.2.2.1) item must be a string, otherwise an invalid language map value error has been detected
+            // and processing is aborted.
+            if (item is String) {
+              // 7.5.2.2.2) Append a JSON object to expanded value that consists of two key-value pairs: (@value-item)
+              // and (@language-lowercased language).
+              expandedValue.add({
+                '@value': item,
+                '@language': language.toLowerCase(),
+              });
+            } else {
+              throw JsonLDException('invalid language map value',
+                  message: item.toString());
+            }
+          }
+        });
+      }
     }
   }
 
